@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ColorCraft — חוברת פעילויות לילדים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&family=Secular+One&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #FFFBF5;
+    --bg-card: #FFFFFF;
+    --primary: #FF6B6B;
+    --primary-dark: #E85555;
+    --secondary: #4ECDC4;
+    --secondary-dark: #3AB5AD;
+    --yellow: #FFE66D;
+    --purple: #A78BFA;
+    --blue: #60A5FA;
+    --pink: #F472B6;
+    --orange: #FB923C;
+    --green: #34D399;
+    --text: #2D3436;
+    --text-light: #636E72;
+    --text-muted: #B2BEC3;
+    --border: #E8E0D8;
+    --shadow: 0 4px 24px rgba(0,0,0,0.06);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Rubik', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; direction: rtl; }
+  body::before { content: ''; position: fixed; top: -120px; left: -120px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(78,205,196,0.1) 0%, transparent 70%); border-radius: 50%; z-index: 0; pointer-events: none; }
+
+  .app { max-width: 720px; margin: 0 auto; padding: 24px 20px 60px; position: relative; z-index: 1; }
+
+  .header { text-align: center; padding: 28px 0 8px; }
+  .header h1 { font-family: 'Secular One', sans-serif; font-size: 2.5rem; background: linear-gradient(135deg, var(--primary), var(--purple), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }
+  .header p { color: var(--text-light); font-size: 1rem; margin-top: 4px; }
+
+  .steps { display: flex; justify-content: center; gap: 8px; margin: 24px 0 28px; }
+  .step-dot { width: 40px; height: 6px; border-radius: 3px; background: var(--border); transition: all 0.4s ease; }
+  .step-dot.active { background: var(--primary); width: 56px; }
+  .step-dot.done { background: var(--secondary); }
+
+  .card { background: var(--bg-card); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); border: 1px solid var(--border); animation: fadeUp 0.35s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  .card-title { font-family: 'Secular One', sans-serif; font-size: 1.4rem; margin-bottom: 4px; }
+  .card-subtitle { color: var(--text-light); font-size: 0.9rem; margin-bottom: 22px; line-height: 1.55; }
+
+  label { display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px; }
+  label .hint { font-weight: 400; color: var(--text-muted); }
+
+  input[type="text"], input[type="password"], input[type="number"] {
+    width: 100%; padding: 11px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+    font-family: 'Rubik', sans-serif; font-size: 0.92rem; color: var(--text); background: var(--bg);
+    transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+  }
+  input:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(78,205,196,0.15); }
+  input::placeholder { color: var(--text-muted); }
+
+  .field { margin-bottom: 18px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border: none; border-radius: var(--radius-sm); font-family: 'Rubik', sans-serif; font-size: 0.92rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); box-shadow: 0 4px 16px rgba(255,107,107,0.3); }
+  .btn-primary:disabled { background: var(--text-muted); cursor: not-allowed; box-shadow: none; }
+  .btn-secondary { background: var(--secondary); color: white; }
+  .btn-secondary:hover { background: var(--secondary-dark); }
+  .btn-outline { background: transparent; color: var(--text-light); border: 2px solid var(--border); }
+  .btn-outline:hover { border-color: var(--text-light); color: var(--text); }
+  .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+  .btn-row .btn { flex: 1; }
+
+  .key-status { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 0.85rem; font-weight: 600; min-height: 22px; }
+  .key-status.success { color: #22C55E; }
+  .key-status.error { color: var(--primary); }
+  .key-status.loading { color: var(--text-muted); }
+
+  .error-banner { background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-sm); padding: 10px 14px; color: #991B1B; font-size: 0.85rem; font-weight: 600; margin-top: 10px; display: none; }
+  .error-banner.visible { display: block; }
+
+  .info-box { background: rgba(78,205,196,0.08); border: 1px solid rgba(78,205,196,0.2); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.84rem; color: var(--text-light); margin-bottom: 18px; line-height: 1.55; }
+  .info-box strong { color: var(--text); }
+  .info-box a { color: var(--secondary-dark); }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.15); border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .kids-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; min-height: 10px; }
+  .kid-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: linear-gradient(135deg, var(--yellow), #FFDA47); border-radius: 20px; font-weight: 700; font-size: 0.85rem; color: #92400E; animation: popIn 0.25s ease; }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+  .kid-chip .avatar-mini { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0,0,0,0.1); }
+  .kid-chip button { background: rgba(0,0,0,0.12); border: none; width: 18px; height: 18px; border-radius: 50%; cursor: pointer; font-size: 11px; color: #92400E; display: flex; align-items: center; justify-content: center; }
+  .kid-chip button:hover { background: rgba(0,0,0,0.22); }
+
+  .add-kid-form { display: flex; flex-direction: column; gap: 8px; padding: 14px; background: var(--bg); border-radius: var(--radius-sm); border: 1px dashed var(--border); }
+  .add-kid-form .row { display: flex; gap: 8px; align-items: center; }
+  .add-kid-form .row input[type="text"] { flex: 1; direction: rtl; }
+  .add-kid-form .row .btn { flex-shrink: 0; }
+
+  .photo-upload-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 2px dashed var(--border); border-radius: var(--radius-sm); background: transparent; font-family: 'Rubik', sans-serif; font-size: 0.82rem; font-weight: 500; color: var(--text-light); cursor: pointer; transition: all 0.2s; }
+  .photo-upload-btn:hover { border-color: var(--secondary); color: var(--secondary-dark); }
+  .photo-upload-btn img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid var(--secondary); }
+
+  .activity-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .activity-btn { padding: 14px 12px; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); font-family: 'Rubik', sans-serif; font-size: 0.88rem; font-weight: 600; color: var(--text-light); cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.4; }
+  .activity-btn .icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+  .activity-btn:hover { border-color: var(--purple); color: var(--text); }
+  .activity-btn.selected { border-color: var(--purple); background: rgba(167,139,250,0.1); color: var(--purple); }
+
+  .categories-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+  @media (max-width: 520px) { .categories-grid { grid-template-columns: repeat(2, 1fr); } .activity-grid { grid-template-columns: 1fr 1fr; } }
+  .cat-btn { padding: 9px 10px; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); font-family: 'Rubik', sans-serif; font-size: 0.82rem; font-weight: 600; color: var(--text-light); cursor: pointer; transition: all 0.2s; text-align: center; }
+  .cat-btn:hover { border-color: var(--secondary); color: var(--text); }
+  .cat-btn.selected { border-color: var(--secondary); background: rgba(78,205,196,0.1); color: var(--secondary-dark); }
+
+  .conditional-section { display: none; animation: fadeUp 0.3s ease; }
+  .conditional-section.visible { display: block; }
+
+  .pages-selector { display: flex; align-items: center; gap: 14px; }
+  .pages-selector button { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--border); background: var(--bg); font-size: 1.2rem; font-weight: 700; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .pages-selector button:hover { border-color: var(--secondary); }
+  .pages-count { font-family: 'Secular One', sans-serif; font-size: 1.8rem; min-width: 44px; text-align: center; color: var(--primary); }
+
+  .cost-estimate { text-align: center; padding: 10px; background: var(--bg); border-radius: var(--radius-sm); font-size: 0.82rem; color: var(--text-light); margin-top: 6px; line-height: 1.6; }
+  .cost-estimate strong { color: var(--text); }
+
+  .progress-container { margin: 20px 0; }
+  .progress-bar-bg { width: 100%; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--secondary), var(--blue)); border-radius: 5px; transition: width 0.5s ease; width: 0%; }
+  .progress-text { text-align: center; margin-top: 8px; font-size: 0.85rem; color: var(--text-light); font-weight: 600; }
+
+  .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 20px 0; }
+  @media (max-width: 480px) { .gallery { grid-template-columns: 1fr; } }
+  .gallery-item { border-radius: var(--radius-sm); overflow: hidden; border: 2px solid var(--border); background: white; animation: fadeUp 0.35s ease; }
+  .gallery-item img { width: 100%; display: block; object-fit: contain; background: white; }
+  .gallery-item-label { padding: 7px 10px; font-size: 0.8rem; font-weight: 600; color: var(--text-light); background: var(--bg); text-align: center; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .footer-note { text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 28px; }
+  .section-divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+  .detail-selector { display: flex; flex-wrap: wrap; gap: 8px; }
+  .detail-btn {
+    padding: 8px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); font-family: 'Rubik', sans-serif; font-size: 0.82rem; font-weight: 600;
+    color: var(--text-light); cursor: pointer; transition: all 0.2s; flex: 1; min-width: 130px; text-align: center;
+  }
+  .detail-btn:hover { border-color: var(--orange); color: var(--text); }
+  .detail-btn.selected { border-color: var(--orange); background: rgba(251,146,60,0.1); color: #C2410C; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>🎨 ColorCraft</h1>
+    <p>חוברת פעילויות מותאמת אישית לילדים</p>
+  </div>
+
+  <div class="steps">
+    <div class="step-dot active" id="dot-0"></div>
+    <div class="step-dot" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+  </div>
+
+  <!-- SCREEN 0: API Key -->
+  <div class="screen active" id="screen-0">
+    <div class="card">
+      <div class="card-title">התחברות ל-OpenAI</div>
+      <div class="card-subtitle">מפתח ה-API נשמר רק בדפדפן שלך ולא נשלח לשום שרת.</div>
+      <div class="field">
+        <label>מפתח API של OpenAI</label>
+        <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" style="direction:ltr;text-align:left">
+        <div class="key-status" id="keyStatus"></div>
+        <div class="error-banner" id="keyError"></div>
+      </div>
+      <div class="info-box">
+        <strong>צריכים מפתח?</strong> היכנסו ל-<a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a> → צרו מפתח חדש. ודאו שיש גישה ל-DALL·E 3 וקרדיט טעון.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="validateBtn" onclick="validateKey()">אימות והמשך ←</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 1: Configuration -->
+  <div class="screen" id="screen-1">
+    <div class="card">
+      <div class="card-title">עיצוב החוברת</div>
+      <div class="card-subtitle">הוסיפו ילדים, בחרו סוגי פעילויות, קטגוריות וכמות דפים.</div>
+
+      <div class="field">
+        <label>ילדים</label>
+        <div class="kids-list" id="kidsList"></div>
+        <div class="add-kid-form">
+          <div class="row">
+            <input type="text" id="kidNameInput" placeholder="שם הילד/ה..." maxlength="30"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault();addKid();}">
+            <button class="btn btn-secondary" onclick="addKid()" style="padding:11px 16px">הוספה</button>
+          </div>
+          <div class="row">
+            <label class="photo-upload-btn" id="photoLabel">
+              📷 הוספת תמונה (רשות)
+              <input type="file" id="kidPhotoInput" accept="image/*" style="display:none" onchange="onPhotoSelected(this)">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>טווח גילאים</label>
+        <div class="field-row">
+          <div><input type="number" id="ageMin" placeholder="מגיל" min="2" max="14" value="4" style="text-align:center"></div>
+          <div><input type="number" id="ageMax" placeholder="עד גיל" min="2" max="14" value="7" style="text-align:center"></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>רמת פירוט <span class="hint">(משפיע על צביעה ומצא ההבדלים)</span></label>
+        <div class="detail-selector">
+          <button class="detail-btn selected" data-level="auto" onclick="setDetail(this)">🔄 אוטומטי לפי גיל</button>
+          <button class="detail-btn" data-level="simple" onclick="setDetail(this)">🟢 פשוט — מעט פרטים</button>
+          <button class="detail-btn" data-level="medium" onclick="setDetail(this)">🟡 בינוני</button>
+          <button class="detail-btn" data-level="detailed" onclick="setDetail(this)">🔴 מפורט — הרבה פרטים</button>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="field">
+        <label>סוגי פעילויות <span class="hint">(בחרו לפחות 1)</span></label>
+        <div class="activity-grid">
+          <button class="activity-btn selected" data-id="coloring" onclick="toggleActivity(this)"><span class="icon">🎨</span>דפי צביעה</button>
+          <button class="activity-btn" data-id="differences" onclick="toggleActivity(this)"><span class="icon">🔍</span>מצא את ההבדלים</button>
+          <button class="activity-btn" data-id="math" onclick="toggleActivity(this)"><span class="icon">➕</span>תרגילי חשבון</button>
+          <button class="activity-btn" data-id="matching" onclick="toggleActivity(this)"><span class="icon">🔗</span>חבר בין דומים</button>
+          <button class="activity-btn" data-id="maze" onclick="toggleActivity(this)"><span class="icon">🏁</span>מבוך</button>
+          <button class="activity-btn" data-id="dots" onclick="toggleActivity(this)"><span class="icon">🔢</span>קו לקו</button>
+        </div>
+      </div>
+
+      <div class="conditional-section visible" id="categoriesSection">
+        <div class="field">
+          <label>קטגוריות <span class="hint">(לצביעה, מצא ההבדלים וקו לקו)</span></label>
+          <div class="categories-grid" id="categoriesGrid"></div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="field">
+        <label>מספר דפים</label>
+        <div class="pages-selector">
+          <button onclick="changePages(-1)">−</button>
+          <div class="pages-count" id="pagesCount">6</div>
+          <button onclick="changePages(1)">+</button>
+        </div>
+        <div class="cost-estimate" id="costEstimate"></div>
+      </div>
+
+      <div class="error-banner" id="configError"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goToScreen(0)">→ חזרה</button>
+        <button class="btn btn-primary" onclick="startGeneration()">יצירת חוברת 🎨</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Generation -->
+  <div class="screen" id="screen-2">
+    <div class="card">
+      <div class="card-title" id="genTitle">מייצר את הדפים...</div>
+      <div class="card-subtitle" id="genSubtitle">רגע אחד — מכינים את חוברת הפעילויות המיוחדת שלכם.</div>
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+        <div class="progress-text" id="progressText">מתחילים...</div>
+      </div>
+      <div class="gallery" id="gallery"></div>
+      <div class="error-banner" id="genError"></div>
+      <div class="btn-row" id="resultButtons" style="display:none;">
+        <button class="btn btn-outline" onclick="resetToConfig()">→ חוברת חדשה</button>
+        <button class="btn btn-primary" onclick="downloadPDF()">הורדת PDF 📄</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">ColorCraft — ציורים נוצרים ע״י DALL·E 3 דרך המפתח שלכם. הכל רץ בדפדפן.</div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/state.js"></script>
+<script src="js/api.js"></script>
+<script src="js/generators.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
