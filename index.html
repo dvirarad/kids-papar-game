@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&family=Secular+One&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://js.puter.com/v2/"></script>
 <style>
   :root {
     --bg: #FFFBF5;
@@ -153,6 +154,15 @@
   }
   .detail-btn:hover { border-color: var(--orange); color: var(--text); }
   .detail-btn.selected { border-color: var(--orange); background: rgba(251,146,60,0.1); color: #C2410C; }
+
+  .mode-selector { display: flex; gap: 12px; margin-bottom: 20px; }
+  .mode-btn { flex: 1; padding: 18px 14px; border: 2px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); font-family: 'Rubik', sans-serif; font-size: 0.92rem; font-weight: 600; color: var(--text-light); cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.5; }
+  .mode-btn .mode-icon { font-size: 1.8rem; display: block; margin-bottom: 6px; }
+  .mode-btn .mode-label { font-size: 1rem; font-weight: 700; display: block; color: var(--text); }
+  .mode-btn .mode-desc { font-size: 0.78rem; font-weight: 400; display: block; margin-top: 2px; }
+  .mode-btn:hover { border-color: var(--purple); }
+  .mode-btn.selected { border-color: var(--secondary); background: rgba(78,205,196,0.08); color: var(--secondary-dark); }
+  .mode-btn.selected .mode-label { color: var(--secondary-dark); }
 </style>
 </head>
 <body>
@@ -169,22 +179,39 @@
     <div class="step-dot" id="dot-2"></div>
   </div>
 
-  <!-- SCREEN 0: API Key -->
+  <!-- SCREEN 0: Mode Selection + API Key -->
   <div class="screen active" id="screen-0">
     <div class="card">
-      <div class="card-title">התחברות ל-OpenAI</div>
-      <div class="card-subtitle">מפתח ה-API נשמר רק בדפדפן שלך ולא נשלח לשום שרת.</div>
-      <div class="field">
-        <label>מפתח API של OpenAI</label>
-        <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" style="direction:ltr;text-align:left">
-        <div class="key-status" id="keyStatus"></div>
-        <div class="error-banner" id="keyError"></div>
+      <div class="card-title">בחרו מצב</div>
+      <div class="card-subtitle">בחרו איך ליצור את התמונות — בחינם או עם מפתח OpenAI.</div>
+
+      <div class="mode-selector">
+        <button class="mode-btn" data-mode="free" onclick="selectMode('free')">
+          <span class="mode-icon">🎁</span>
+          <span class="mode-label">חינם</span>
+          <span class="mode-desc">ללא מפתח, ללא עלות<br>תמונות מ-Puter.ai</span>
+        </button>
+        <button class="mode-btn selected" data-mode="pro" onclick="selectMode('pro')">
+          <span class="mode-icon">⚡</span>
+          <span class="mode-label">Pro</span>
+          <span class="mode-desc">מפתח OpenAI · ~$0.08 לתמונה<br>איכות DALL·E 3</span>
+        </button>
       </div>
-      <div class="info-box">
-        <strong>צריכים מפתח?</strong> היכנסו ל-<a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a> → צרו מפתח חדש. ודאו שיש גישה ל-DALL·E 3 וקרדיט טעון.
+
+      <div id="proKeySection">
+        <div class="field">
+          <label>מפתח API של OpenAI</label>
+          <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" style="direction:ltr;text-align:left">
+          <div class="key-status" id="keyStatus"></div>
+          <div class="error-banner" id="keyError"></div>
+        </div>
+        <div class="info-box">
+          <strong>צריכים מפתח?</strong> היכנסו ל-<a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a> → צרו מפתח חדש. ודאו שיש גישה ל-DALL·E 3 וקרדיט טעון.
+        </div>
       </div>
+
       <div class="btn-row">
-        <button class="btn btn-primary" id="validateBtn" onclick="validateKey()">אימות והמשך ←</button>
+        <button class="btn btn-primary" id="validateBtn" onclick="continueFromScreen0()">המשך ←</button>
       </div>
     </div>
   </div>
@@ -204,7 +231,7 @@
                    onkeydown="if(event.key==='Enter'){event.preventDefault();addKid();}">
             <button class="btn btn-secondary" onclick="addKid()" style="padding:11px 16px">הוספה</button>
           </div>
-          <div class="row">
+          <div class="row" id="photoUploadRow">
             <label class="photo-upload-btn" id="photoLabel">
               📷 הוספת תמונה (רשות)
               <input type="file" id="kidPhotoInput" accept="image/*" style="display:none" onchange="onPhotoSelected(this)">
@@ -291,7 +318,7 @@
     </div>
   </div>
 
-  <div class="footer-note">ColorCraft — ציורים נוצרים ע״י DALL·E 3 דרך המפתח שלכם. הכל רץ בדפדפן.</div>
+  <div class="footer-note">ColorCraft — ציורים נוצרים ע״י AI. הכל רץ בדפדפן.</div>
 </div>
 
 <script src="js/utils.js"></script>

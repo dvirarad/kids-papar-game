@@ -3,6 +3,7 @@
 // ══════════════════════════════════════════
 
 async function callDalle(prompt, size = '1024x1024') {
+  if (apiMode === 'free') return await callFreeImage(prompt, size);
   const res = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -15,7 +16,17 @@ async function callDalle(prompt, size = '1024x1024') {
   return (await res.json()).data[0].b64_json;
 }
 
+async function callFreeImage(prompt, size = '1024x1024') {
+  if (typeof puter === 'undefined') throw new Error('Puter.js not loaded — make sure to serve via HTTP');
+  const img = await puter.ai.txt2img(prompt);
+  // img.src is a data URL like "data:image/png;base64,..."
+  const parts = img.src.split(',');
+  if (parts.length < 2) throw new Error('Unexpected image format from Puter');
+  return parts[1];
+}
+
 async function convertPhotoToLineArt(photoB64) {
+  if (apiMode === 'free') throw new Error('Photo to line art not available in free mode');
   // Convert photo to PNG blob for the image edit API
   const img = await loadImage(photoB64);
   const c = document.createElement('canvas'); c.width = 1024; c.height = 1024;
@@ -46,6 +57,7 @@ async function convertPhotoToLineArt(photoB64) {
 
 // Use GPT-4o Vision to describe a child's appearance from a photo
 async function describeChildPhoto(photoB64) {
+  if (apiMode === 'free') return 'a happy smiling child';
   const base64Data = photoB64.split(',')[1];
   const mediaType = photoB64.match(/data:(image\/\w+);/)?.[1] || 'image/jpeg';
 

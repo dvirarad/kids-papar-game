@@ -3,6 +3,7 @@
 // ══════════════════════════════════════════
 
 let apiKey = '';
+let apiMode = 'pro'; // 'free' or 'pro'
 let kids = [];
 let selectedActivities = new Set(['coloring']);
 let selectedCategories = new Set();
