@@ -113,6 +113,7 @@ async function validateKey() {
       } else {
         status.className = 'key-status error';
         status.textContent = '✗ המפתח עובד אך DALL·E לא נמצא';
+        showError('keyError', 'המפתח אינו תומך ב-DALL·E (2 או 3). ודאו שהמפתח שייך לחשבון עם גישה ל-DALL·E וקרדיט טעון.');
       }
     } else if (res.status === 401) {
       status.className = 'key-status error'; status.textContent = '✗ מפתח לא תקין';
