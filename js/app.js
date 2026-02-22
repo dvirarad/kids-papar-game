@@ -2,6 +2,29 @@
 // APP — UI, orchestrator, gallery, PDF, init
 // ══════════════════════════════════════════
 
+// ── Mode Selection ──────────────────────
+function selectMode(mode) {
+  apiMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === mode));
+  document.getElementById('proKeySection').style.display = mode === 'pro' ? 'block' : 'none';
+  document.getElementById('keyStatus').className = 'key-status';
+  document.getElementById('keyStatus').textContent = '';
+  updateCost();
+}
+
+function continueFromScreen0() {
+  if (apiMode === 'pro') {
+    validateKey();
+  } else {
+    // Free mode requires http:// for Puter.js
+    if (location.protocol === 'file:') {
+      showError('keyError', 'מצב חינם דורש שרת מקומי. הריצו בטרמינל: python3 -m http.server 8000 ואז גלשו ל-http://localhost:8000');
+      return;
+    }
+    goToScreen(1);
+  }
+}
+
 // ── Navigation ──────────────────────────
 function goToScreen(n) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -9,6 +32,11 @@ function goToScreen(n) {
   document.querySelectorAll('.step-dot').forEach((d, i) => {
     d.className = 'step-dot' + (i < n ? ' done' : '') + (i === n ? ' active' : '');
   });
+  // Hide photo upload in free mode
+  if (n === 1) {
+    const photoRow = document.getElementById('photoUploadRow');
+    if (photoRow) photoRow.style.display = apiMode === 'free' ? 'none' : '';
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function resetToConfig() { generatedPages = []; goToScreen(1); }
@@ -76,6 +104,12 @@ function changePages(d) {
 function updateCost() {
   const acts = Array.from(selectedActivities);
   if (acts.length === 0) { document.getElementById('costEstimate').innerHTML = ''; return; }
+  if (apiMode === 'free') {
+    document.getElementById('costEstimate').innerHTML =
+      `<strong>$0 — חינם</strong><br>` +
+      `<span style="font-size:0.78rem">תמונות נוצרות באמצעות Puter.ai ללא עלות</span>`;
+    return;
+  }
   // Estimate DALL-E calls per activity type per page
   let totalDalleCalls = 0;
   const pagesPerType = Math.ceil(pageCount / acts.length);
