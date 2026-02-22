@@ -88,19 +88,20 @@ async function generateColoringPage(kidName, catObj, avgAge) {
   let style, sceneGuide;
 
   if (detail === 'simple') {
-    style = 'very thick bold outlines (5px+), extremely simple rounded shapes, very large coloring areas, toddler-friendly';
-    sceneGuide = `Show only ONE main ${catEn} character, big and centered, with maybe 1-2 tiny background elements. Very minimal, like a toddler coloring book.`;
+    style = 'extremely thick bold outlines (6px+), very simple rounded shapes, huge coloring areas, toddler-friendly';
+    sceneGuide = `Show ONLY ONE single huge ${catEn} character, very big and centered, filling at least 80% of the page. Absolutely NO background elements, NO ground line, NO extra objects. Extremely minimal with very few internal details, like a toddler coloring book for ages 2-4.`;
   } else if (detail === 'medium') {
-    style = 'thick bold outlines (3-4px), simple shapes, large coloring areas, preschool level';
-    sceneGuide = `Show 2-3 simple ${catEn} themed objects. Keep it clean and spacious with lots of white space. No clutter. Like a kindergarten coloring book.`;
+    style = 'thick bold outlines (4-5px), simple clear shapes, large well-separated coloring areas, preschool level';
+    sceneGuide = `Show 2-3 big ${catEn} themed objects, large and well-separated with lots of white space between them. No background patterns, no ground textures, no tiny details, no clutter. Like a kindergarten coloring book.`;
   } else {
-    style = 'clean medium outlines, good detail, varied coloring areas';
-    sceneGuide = `A detailed ${catEn} themed scene with many objects, patterns, and background elements. Engaging and complex.`;
+    style = 'clean bold outlines (3px), clear shapes, varied coloring areas';
+    sceneGuide = `A ${catEn} themed scene with 4-5 clearly separated objects. Good detail but still clear and easy to color with distinct well-separated sections.`;
   }
 
   const prompt = `A children's coloring book page. ${sceneGuide} ` +
     `Style: pure black and white line art on clean white background, ${style}. ` +
-    `ONLY black outlines on white — NO shading, NO gray, NO color fills. Printable coloring page for kids.`;
+    `CRITICAL: ONLY bold black outlines on pure white — absolutely NO shading, NO gray areas, NO gradients, NO crosshatching, NO hatching, NO fine textures, NO stippling, NO color fills, NO pencil texture. ` +
+    `Every shape must have thick closed outlines creating distinct empty white areas to color in. Lines must be clean, smooth, and bold. Printable coloring page for kids.`;
 
   const b64 = await callDalle(prompt);
   return b64toDataUrl(b64);
@@ -114,56 +115,37 @@ async function generateDifferencesPage(kidName, catObj, avgAge) {
 
   let sceneIdx, numDiffs, diffRadius, lineW, ageStyle;
   if (detail === 'simple') {
-    sceneIdx = 0; numDiffs = 3; diffRadius = [30, 45]; lineW = 4;
+    sceneIdx = 0; numDiffs = 2; diffRadius = [60, 85]; lineW = 8;
     ageStyle = 'Very thick bold outlines (5px+), extremely simple rounded shapes, very large objects, maximum white space, toddler coloring book style.';
   } else if (detail === 'medium') {
-    sceneIdx = 1; numDiffs = 5; diffRadius = [24, 35]; lineW = 3;
+    sceneIdx = 1; numDiffs = 3; diffRadius = [50, 70]; lineW = 6;
     ageStyle = 'Thick clean outlines (3px), simple clear shapes, spacious layout, kindergarten coloring book style.';
   } else {
-    sceneIdx = 2; numDiffs = 7; diffRadius = [18, 28]; lineW = 2.5;
+    sceneIdx = 2; numDiffs = 5; diffRadius = [35, 50]; lineW = 5;
     ageStyle = 'Clean outlines with good detail, varied shapes, school-age coloring book style.';
   }
 
-  // Pick 2 different scenes for 2 games
-  const allCatIds = Array.from(selectedCategories);
-  const cat2Id = allCatIds.length > 1 ? (allCatIds.find(c => c !== catId) || catId) : catId;
-  const sceneTiers2 = DIFF_SCENES[cat2Id] || DIFF_SCENES.default;
-  const scene1 = sceneTiers[sceneIdx];
-  const scene2 = cat2Id !== catId ? sceneTiers2[sceneIdx] : sceneTiers[Math.min(sceneIdx + 1, 2)];
+  const scene = sceneTiers[sceneIdx];
 
-  const makePrompt = (scene) =>
+  const prompt =
     `A children's coloring book illustration of ${scene}. ${ageStyle} ` +
     `Pure black and white LINE ART only, clean outlines on white background. ` +
     `NO shading, NO gray tones, NO filled areas — ONLY black outlines on white.`;
 
-  // Generate 2 scenes (2 DALL-E calls)
-  const b64_1 = await callDalle(makePrompt(scene1));
-  const origImg1 = await loadImage(b64toDataUrl(b64_1));
-  const b64_2 = await callDalle(makePrompt(scene2));
-  const origImg2 = await loadImage(b64toDataUrl(b64_2));
+  // Generate 1 scene (1 DALL-E call)
+  const b64 = await callDalle(prompt);
+  const origImg = await loadImage(b64toDataUrl(b64));
 
-  // Create modified versions
-  const modImg1 = await createModifiedImage(origImg1, numDiffs, diffRadius, lineW);
-  const modImg2 = await createModifiedImage(origImg2, numDiffs, diffRadius, lineW);
+  // Create modified version
+  const modImg = await createModifiedImage(origImg, numDiffs, diffRadius, lineW);
 
-  // Composite: 2 games stacked
-  const cW = 1024, cH = 1480;
+  // Composite: 1 game per page with large stacked vertical panels
+  const cW = 1024, cH = 1700;
   const c = document.createElement('canvas'); c.width = cW; c.height = cH;
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, cW, cH);
 
-  // Game 1
-  drawDiffGame(ctx, origImg1, modImg1, kidName, numDiffs, 1, 10, cW);
-
-  // Separator
-  const sepY = 730;
-  ctx.setLineDash([6, 4]);
-  ctx.strokeStyle = '#CCC'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(40, sepY); ctx.lineTo(cW - 40, sepY); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // Game 2
-  drawDiffGame(ctx, origImg2, modImg2, kidName, numDiffs, 2, sepY + 10, cW);
+  drawDiffGame(ctx, origImg, modImg, kidName, numDiffs, 0, 30, cW);
 
   return c.toDataURL('image/png');
 }
@@ -175,7 +157,7 @@ async function createModifiedImage(origImg, numDiffs, diffRadius, lineW) {
   ctx.drawImage(origImg, 0, 0, 1024, 1024);
 
   const used = [];
-  const margin = 80;
+  const margin = 100;
   for (let d = 0; d < numDiffs; d++) {
     let px, py, r, attempts = 0;
     do {
@@ -183,28 +165,37 @@ async function createModifiedImage(origImg, numDiffs, diffRadius, lineW) {
       px = margin + Math.random() * (1024 - margin * 2);
       py = margin + Math.random() * (1024 - margin * 2);
       attempts++;
-    } while (attempts < 80 && used.some(z => Math.hypot(z.x - px, z.y - py) < z.r + r + 25));
+    } while (attempts < 80 && used.some(z => Math.hypot(z.x - px, z.y - py) < z.r + r + 40));
     used.push({ x: px, y: py, r });
 
     ctx.save();
-    const type = d % 4;
+    const type = d % 3;
     if (type === 0) {
+      // Erase: large white circle to remove a visible area
       ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2);
       ctx.fillStyle = '#FFF'; ctx.fill();
-    } else if (type === 1) {
-      ctx.strokeStyle = '#000'; ctx.lineWidth = lineW;
-      ctx.beginPath(); drawStar(ctx, px, py, 5, r * 0.8, r * 0.4); ctx.stroke();
-    } else if (type === 2) {
-      ctx.strokeStyle = '#000'; ctx.lineWidth = lineW;
-      ctx.beginPath(); ctx.arc(px, py, r * 0.7, 0, Math.PI * 2); ctx.stroke();
-      const s = r * 0.35;
-      ctx.beginPath();
-      ctx.moveTo(px - s, py - s); ctx.lineTo(px + s, py + s);
-      ctx.moveTo(px + s, py - s); ctx.lineTo(px - s, py + s);
+      // Draw a light dashed circle outline so the missing area is clearly bounded
+      ctx.beginPath(); ctx.arc(px, py, r + 2, 0, Math.PI * 2);
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = '#CCC'; ctx.lineWidth = 2;
       ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (type === 1) {
+      // Add bold star — larger fill and thicker stroke
+      ctx.strokeStyle = '#000'; ctx.lineWidth = lineW + 2;
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); drawStar(ctx, px, py, 5, r * 1.15, r * 0.55); ctx.stroke(); ctx.fill();
     } else {
-      ctx.beginPath(); ctx.arc(px, py, r * 0.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#000'; ctx.fill();
+      // Add bold heart — larger and thicker
+      ctx.fillStyle = '#000';
+      ctx.strokeStyle = '#000'; ctx.lineWidth = lineW;
+      ctx.beginPath();
+      const hr = r * 1.1;
+      const topY = py - hr * 0.4;
+      ctx.moveTo(px, py + hr * 0.7);
+      ctx.bezierCurveTo(px - hr * 1.2, py - hr * 0.1, px - hr * 0.7, topY - hr * 0.6, px, topY + hr * 0.1);
+      ctx.bezierCurveTo(px + hr * 0.7, topY - hr * 0.6, px + hr * 1.2, py - hr * 0.1, px, py + hr * 0.7);
+      ctx.fill(); ctx.stroke();
     }
     ctx.restore();
   }
@@ -212,35 +203,43 @@ async function createModifiedImage(origImg, numDiffs, diffRadius, lineW) {
 }
 
 function drawDiffGame(ctx, origImg, modImg, kidName, numDiffs, gameNum, startY, cW) {
-  ctx.fillStyle = '#000'; ctx.font = 'bold 26px Rubik, Arial'; ctx.textAlign = 'center';
-  ctx.fillText(`🔍 משחק ${gameNum}: מצאו ${numDiffs} הבדלים`, cW / 2, startY + 26);
+  // Title
+  ctx.fillStyle = '#000'; ctx.font = 'bold 34px Rubik, Arial'; ctx.textAlign = 'center';
+  const title = gameNum > 0
+    ? `🔍 משחק ${gameNum}: מצאו ${numDiffs} הבדלים — ${kidName}`
+    : `🔍 מצאו ${numDiffs} הבדלים — ${kidName}`;
+  ctx.fillText(title, cW / 2, startY + 36);
 
-  const panelW = 465, panelH = 370;
-  const gap = 14;
-  const totalW = panelW * 2 + gap;
-  const panelX1 = (cW - totalW) / 2;
-  const panelX2 = panelX1 + panelW + gap;
-  const panelY = startY + 40;
+  // Stacked vertical panels — large and centered for easy comparison
+  const panelW = 700, panelH = 700;
+  const panelX = (cW - panelW) / 2;
 
-  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
-  ctx.strokeRect(panelX1, panelY, panelW, panelH);
-  ctx.drawImage(origImg, panelX1, panelY, panelW, panelH);
+  // Panel 1 — original image
+  const label1Y = startY + 60;
+  ctx.fillStyle = '#000'; ctx.font = 'bold 22px Rubik, Arial'; ctx.textAlign = 'center';
+  ctx.fillText('תמונה א׳', cW / 2, label1Y + 16);
+  const panel1Y = label1Y + 30;
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+  ctx.strokeRect(panelX, panel1Y, panelW, panelH);
+  ctx.drawImage(origImg, panelX, panel1Y, panelW, panelH);
 
-  ctx.strokeRect(panelX2, panelY, panelW, panelH);
-  ctx.drawImage(modImg, panelX2, panelY, panelW, panelH);
+  // Panel 2 — modified image
+  const label2Y = panel1Y + panelH + 15;
+  ctx.fillStyle = '#000'; ctx.font = 'bold 22px Rubik, Arial'; ctx.textAlign = 'center';
+  ctx.fillText('תמונה ב׳', cW / 2, label2Y + 16);
+  const panel2Y = label2Y + 30;
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
+  ctx.strokeRect(panelX, panel2Y, panelW, panelH);
+  ctx.drawImage(modImg, panelX, panel2Y, panelW, panelH);
 
-  ctx.fillStyle = '#000'; ctx.font = 'bold 14px Rubik, Arial'; ctx.textAlign = 'center';
-  ctx.fillText('תמונה א׳', panelX1 + panelW / 2, panelY + panelH + 15);
-  ctx.fillText('תמונה ב׳', panelX2 + panelW / 2, panelY + panelH + 15);
-
-  // Checkboxes
-  const checkY = panelY + panelH + 22;
+  // Checkboxes below panel 2
+  const checkY = panel2Y + panelH + 15;
   for (let i = 0; i < numDiffs; i++) {
-    const cx = cW / 2 + (i - numDiffs / 2 + 0.5) * 38;
-    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.2;
-    ctx.strokeRect(cx - 9, checkY + 6, 18, 18);
-    ctx.fillStyle = '#999'; ctx.font = '11px Rubik, Arial';
-    ctx.fillText(`${i + 1}`, cx, checkY + 19);
+    const cx = cW / 2 + (i - numDiffs / 2 + 0.5) * 50;
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx - 12, checkY + 6, 24, 24);
+    ctx.fillStyle = '#999'; ctx.font = '14px Rubik, Arial';
+    ctx.fillText(`${i + 1}`, cx, checkY + 22);
   }
 }
 
